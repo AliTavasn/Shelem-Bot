@@ -83,6 +83,17 @@ class Group:
     def color_team(self, color_team):
         pass
 
+    @property
+    def first_deck(self):
+        deck = 5
+        for i in range(4):
+            if self.cards[i] % 13 == 1 or self.cards[i] % 13 == 5:
+                deck += 10
+            elif self.cards[i] % 13 == 10:
+                deck += 5
+        return deck
+
+
     def group_score(self):
         score = (len(self.cards) // 4) * 5
         for i in self.cards:
@@ -91,6 +102,7 @@ class Group:
             elif i % 13 == 10:
                 score += 5
         return score
+
 
 class Game:
     ID = 0
@@ -128,15 +140,15 @@ games: dict[int, Game] = {}
 def main():
     @bot.inline_handler(func= lambda query: len(query.query) == 0)
     def handel_inline_query(query):
-        # global game
-        # game = Game()
-        # games[g.id] = game
-        # user_id = query.from_user.id
-        # first_name = str(query.from_user.first_name).split()[0]
-        # user_name = query.from_user.username
-        # games[g.id].players.append(Player(user_id, first_name, f"@{user_name}"))
-        # games[g.id].players_id.add(user_id)
-        # display_name1  = f"<a href='tg://user?id={user_id}'>{first_name}</a>"
+        global g
+        g = Game()
+        games[g.id] = g
+        user_id = query.from_user.id
+        first_name = str(query.from_user.first_name).split()[0]
+        user_name = query.from_user.username
+        games[g.id].players.append(Player(user_id, first_name, f"@{user_name}"))
+        games[g.id].players_id.add(user_id)
+        display_name1  = f"<a href='tg://user?id={user_id}'>{first_name}</a>"
         results = []
         keyboard_lets_play = lets_play()
         for robot in robots:
@@ -145,7 +157,7 @@ def main():
                 title=robot["title"],
                 description=robot["description"],
                 input_message_content=types.InputTextMessageContent(
-                    message_text= f"Who wants to play Shelem😃? Press the button to join!\n\nCurrent players:" ,
+                    message_text= f"Who wants to play Shelem😃? Press the button to join!\n\nCurrent players:\n{display_name1}" ,
                     parse_mode="HTML"
                 ),
                 thumbnail_url=robot["thumb"],
@@ -279,14 +291,14 @@ def main():
                 games[g.id].ruler.cards.remove(item)
             games[g.id].ruler.cards.sort()
             games[g.id].answer[games[g.id].ruler.user_id] = "finger"
-            text_playing = f"Shelem game\n\n{games[g.id].ruler_group.color}:{games[g.id].ruler_group.player1.first_name} and {games[g.id].ruler_group.player2.first_name}     ...............     {games[g.id].ruler_group.group_score()}/{games[g.id].final_score}\n{games[g.id].another_group.color}:{games[g.id].another_group.player1.first_name} and {games[g.id].another_group.player2.first_name}     ...............     {games[g.id].another_group.group_score()}\n\n{games[g.id].ruler.display_name()} it`s your trun. Play your card."
+            text_playing = f"Shelem game\n\n{games[g.id].ruler_group.color}:{games[g.id].ruler_group.player1.first_name} and {games[g.id].ruler_group.player2.first_name}     ...............     ? + {games[g.id].ruler_group.group_score() - games[g.id].ruler_group.first_deck}/{games[g.id].final_score}\n{games[g.id].another_group.color}:{games[g.id].another_group.player1.first_name} and {games[g.id].another_group.player2.first_name}     ...............     {games[g.id].another_group.group_score()}\n\n{games[g.id].ruler.display_name()} it`s your trun. Play your card."
             playing = playing_shelem(games[g.id].players, games[g.id].ruler, games[g.id].ruler_group, games[g.id].another_group, "?", games[g.id].answer[games[g.id].players[0].user_id], games[g.id].answer[games[g.id].players[1].user_id], games[g.id].answer[games[g.id].players[2].user_id], games[g.id].answer[games[g.id].players[3].user_id])
             bot.edit_message_text(inline_message_id=call.inline_message_id, text= text_playing, reply_markup= playing, parse_mode="HTML")
 
 
     @bot.callback_query_handler(func= lambda call: call.data in["cart3_1","cart3_2","cart3_3","cart3_4","cart3_5","cart3_6","cart3_7","cart3_8","cart3_9","cart3_10","cart3_11","cart3_12","cart3_13","cart3_14","cart3_15","cart3_16"])
     def playing(call):
-        global g
+        global g, card_numbers
         display = ""   
         if len(games[g.id].ruler.cards) == 12 and call.from_user.id == games[g.id].ruler.user_id and games[g.id].turn == games[g.id].ruler.user_id:
             games[g.id].rule, games[g.id].rule_sign = set_rule(call.data, games[g.id].ruler)
@@ -300,7 +312,7 @@ def main():
                 if p.user_id == games[g.id].turn:
                     display = p.display_name()
                     break
-            text_playing = f"Shelem game\n\n{games[g.id].ruler_group.color}:{games[g.id].ruler_group.player1.first_name} and {games[g.id].ruler_group.player2.first_name}     ...............     {games[g.id].ruler_group.group_score()}/{games[g.id].final_score}\n{games[g.id].another_group.color}:{games[g.id].another_group.player1.first_name} and {games[g.id].another_group.player2.first_name}     ...............     {games[g.id].another_group.group_score()}\n\n{display} it`s your trun. Play your card."
+            text_playing = f"Shelem game\n\n{games[g.id].ruler_group.color}:{games[g.id].ruler_group.player1.first_name} and {games[g.id].ruler_group.player2.first_name}     ...............     ? + {games[g.id].ruler_group.group_score() - games[g.id].ruler_group.first_deck}/{games[g.id].final_score}\n{games[g.id].another_group.color}:{games[g.id].another_group.player1.first_name} and {games[g.id].another_group.player2.first_name}     ...............     {games[g.id].another_group.group_score()}\n\n{display} it`s your trun. Play your card."
             playing = playing_shelem(games[g.id].players, games[g.id].ruler, games[g.id].ruler_group, games[g.id].another_group, games[g.id].rule_sign, games[g.id].answer[games[g.id].players[0].user_id], games[g.id].answer[games[g.id].players[1].user_id], games[g.id].answer[games[g.id].players[2].user_id], games[g.id].answer[games[g.id].players[3].user_id])
             bot.edit_message_text(inline_message_id=call.inline_message_id, text= text_playing, reply_markup= playing, parse_mode="HTML")
             bot.answer_callback_query(call.id)
@@ -327,7 +339,7 @@ def main():
                 print(games[g.id].another_group.cards)
                 games[g.id].answer[games[g.id].turn] = cards[card_num]
                 games[g.id].turn = set_score(games[g.id].played_cards, games[g.id].rule, games[g.id].ruler_group, games[g.id].another_group, games[g.id].players, games[g.id].current_rule)
-                text_playing2 = f"Shelem game\n\n{games[g.id].ruler_group.color}:{games[g.id].ruler_group.player1.first_name} and {games[g.id].ruler_group.player2.first_name}     ...............     {games[g.id].ruler_group.group_score()}/{games[g.id].final_score}\n{games[g.id].another_group.color}:{games[g.id].another_group.player1.first_name} and {games[g.id].another_group.player2.first_name}     ...............     {games[g.id].another_group.group_score()}\n\n{display} it`s your trun. Play your card."
+                text_playing2 = f"Shelem game\n\n{games[g.id].ruler_group.color}:{games[g.id].ruler_group.player1.first_name} and {games[g.id].ruler_group.player2.first_name}     ...............     ? + {games[g.id].ruler_group.group_score() - games[g.id].ruler_group.first_deck}/{games[g.id].final_score}\n{games[g.id].another_group.color}:{games[g.id].another_group.player1.first_name} and {games[g.id].another_group.player2.first_name}     ...............     {games[g.id].another_group.group_score()}\n\n{display} it`s your trun. Play your card."
                 playing2 = playing_shelem(games[g.id].players, games[g.id].ruler, games[g.id].ruler_group, games[g.id].another_group, games[g.id].rule_sign, games[g.id].answer[games[g.id].players[0].user_id], games[g.id].answer[games[g.id].players[1].user_id], games[g.id].answer[games[g.id].players[2].user_id], games[g.id].answer[games[g.id].players[3].user_id])
                 bot.edit_message_text(inline_message_id=call.inline_message_id, text= text_playing2, reply_markup= playing2, parse_mode="HTML")
                 bot.answer_callback_query(call.id)
@@ -346,7 +358,7 @@ def main():
                         display = p.display_name()
                         break
                 print(games[g.id].rule, games[g.id].rule_sign)
-                text_playing = f"Shelem game\n\n{games[g.id].ruler_group.color}:{games[g.id].ruler_group.player1.first_name} and {games[g.id].ruler_group.player2.first_name}     ...............     {games[g.id].ruler_group.group_score()}/{games[g.id].final_score}\n{games[g.id].another_group.color}:{games[g.id].another_group.player1.first_name} and {games[g.id].another_group.player2.first_name}     ...............     {games[g.id].another_group.group_score()}\n\n{display} it`s your trun. Play your card."
+                text_playing = f"Shelem game\n\n{games[g.id].ruler_group.color}:{games[g.id].ruler_group.player1.first_name} and {games[g.id].ruler_group.player2.first_name}     ...............     ? + {games[g.id].ruler_group.group_score() - games[g.id].ruler_group.first_deck}/{games[g.id].final_score}\n{games[g.id].another_group.color}:{games[g.id].another_group.player1.first_name} and {games[g.id].another_group.player2.first_name}     ...............     {games[g.id].another_group.group_score()}\n\n{display} it`s your trun. Play your card."
                 playing = playing_shelem(games[g.id].players, games[g.id].ruler, games[g.id].ruler_group, games[g.id].another_group, games[g.id].rule_sign, games[g.id].answer[games[g.id].players[0].user_id], games[g.id].answer[games[g.id].players[1].user_id], games[g.id].answer[games[g.id].players[2].user_id], games[g.id].answer[games[g.id].players[3].user_id])
                 bot.edit_message_text(inline_message_id=call.inline_message_id, text= text_playing, reply_markup= playing, parse_mode="HTML")
                 bot.answer_callback_query(call.id)
@@ -356,9 +368,11 @@ def main():
         if len(games[g.id].ruler.cards) == 0:
             end_text = set_winner(games[g.id].ruler_group, games[g.id].another_group, games[g.id].final_score)
             end = end_game()
+            del g
+            card_numbers = [i for i in range(1,53)]
             bot.edit_message_text(inline_message_id=call.inline_message_id, text= end_text, reply_markup= end)
             bot.answer_callback_query(call.id)
-            del g
+
    
 
 
